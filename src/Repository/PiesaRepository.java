@@ -181,5 +181,9 @@ public class PiesaRepository {
             pstmt.setString(5, piesa.getDurata());
             pstmt.executeUpdate();
         }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+
     }
 }
