@@ -11,7 +11,8 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
-
+import java.util.List;
+@SuppressWarnings("unchecked")
 public class MuzicaGUI extends Application {
 
     private PiesaRepository repository;
@@ -144,13 +145,16 @@ public class MuzicaGUI extends Application {
         HBox hboxPlaylist = new HBox(10);
         Label lblPlaylist = new Label("Generare playlist:");
         txtNumePlaylist = new TextField();
-        txtNumePlaylist.setPrefWidth(200);
+        txtNumePlaylist.setPrefWidth(150);
         txtNumePlaylist.setPromptText("nume_playlist");
 
         Button btnGenereaza = new Button("Generează");
         btnGenereaza.setOnAction(e -> genereazaPlaylist());
 
-        hboxPlaylist.getChildren().addAll(lblPlaylist, txtNumePlaylist, btnGenereaza);
+        Button btnVeziPlaylist = new Button("Vezi Playlist");
+        btnVeziPlaylist.setOnAction(e -> veziPlaylist());
+
+        hboxPlaylist.getChildren().addAll(lblPlaylist, txtNumePlaylist, btnGenereaza, btnVeziPlaylist);
 
         // Adauga tot in root
         root.getChildren().addAll(
@@ -352,6 +356,71 @@ public class MuzicaGUI extends Application {
                     "Nu s-a putut genera playlist-ul!\n" +
                             "Verificați că există suficiente piese diverse.");
         }
+    }
+
+    private void veziPlaylist() {
+        String nume = txtNumePlaylist.getText().trim();
+
+        if (nume.isEmpty()) {
+            afiseazaEroare("Eroare", "Introduceți numele playlist-ului!");
+            return;
+        }
+
+        // Verifică dacă tabela există
+        if (!repository.existaTabela(nume)) {
+            afiseazaEroare("Eroare", "Playlist-ul '" + nume + "' nu există în baza de date!\n" +
+                    "Generați mai întâi playlist-ul.");
+            return;
+        }
+
+        // Obține piesele din playlist
+        List<Piesa> piese = repository.getPieseListaRedare(nume);
+
+        if (piese.isEmpty()) {
+            afiseazaEroare("Eroare", "Playlist-ul este gol!");
+            return;
+        }
+
+        // Calculează durata totală
+        int durataTotal = 0;
+        for (Piesa p : piese) {
+            durataTotal += p.getDurataInSecunde();
+        }
+        int minute = durataTotal / 60;
+        int secunde = durataTotal % 60;
+
+        // Creează mesajul
+        StringBuilder mesaj = new StringBuilder();
+        mesaj.append("📊 Playlist: ").append(nume).append("\n");
+        mesaj.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
+
+        for (int i = 0; i < piese.size(); i++) {
+            Piesa p = piese.get(i);
+            mesaj.append(i + 1).append(". ")
+                    .append(p.getFormatie()).append(" - ")
+                    .append(p.getTitlu()).append("\n")
+                    .append("   Gen: ").append(p.getGenMuzical())
+                    .append(" | Durată: ").append(p.getDurata())
+                    .append("\n\n");
+        }
+
+        mesaj.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+        mesaj.append("Total: ").append(piese.size()).append(" piese | ");
+        mesaj.append("Durată: ").append(String.format("%02d:%02d", minute, secunde));
+
+        // Afișează dialog
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Conținut Playlist");
+        alert.setHeaderText(null);
+
+        TextArea textArea = new TextArea(mesaj.toString());
+        textArea.setEditable(false);
+        textArea.setWrapText(true);
+        textArea.setPrefWidth(500);
+        textArea.setPrefHeight(400);
+
+        alert.getDialogPane().setContent(textArea);
+        alert.showAndWait();
     }
 
     private void afiseazaEroare(String titlu, String mesaj) {
